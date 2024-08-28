@@ -1,0 +1,47 @@
+{
+  "name": "firebase-chat-demo",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "shadcn": "shadcn"
+  },
+  "dependencies": {
+    "@radix-ui/react-label": "^2.1.0",
+    "@radix-ui/react-slot": "^1.1.0",
+    "@radix-ui/react-tabs": "^1.1.0",
+    "@tanstack/query-sync-storage-persister": "^5.52.2",
+    "@tanstack/react-query": "^5.52.2",
+    "@tanstack/react-query-devtools": "^5.52.2",
+    "@tanstack/react-query-persist-client": "^5.52.2",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
+    "firebase": "^10.13.0",
+    "jose": "^5.8.0",
+    "js-base64": "^3.7.7",
+    "js-cookie": "^3.0.5",
+    "lucide-react": "^0.436.0",
+    "next": "14.2.7",
+    "react": "^18",
+    "react-dom": "^18",
+    "shadcn": "^1.0.0",
+    "styled-jsx": "^5.1.6",
+    "tailwind-merge": "^2.5.2",
+    "tailwindcss-animate": "^1.0.7",
+    "zustand": "^4.5.5"
+  },
+  "devDependencies": {
+    "@types/js-cookie": "^3.0.6",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.7",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5"
+  }
+}
