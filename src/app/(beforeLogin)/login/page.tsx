@@ -15,8 +15,9 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertCircle, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { customFetch } from "@/util/api";
-import { HttpMethod } from "@/shared";
+import { AuthCookie, HttpMethod } from "@/shared";
 import { IUserPayload } from "@/shared/interfaces/user";
+import Cookies from "js-cookie";
 
 const SignUpLoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -51,6 +52,7 @@ const SignUpLoginPage: React.FC = () => {
         body: JSON.stringify({ email, password }),
       });
 
+      Cookies.set(AuthCookie.ACCESS_TOKEN, data.token, { expires: 1 });
       localStorage.setItem("userName", data.user.name);
       localStorage.setItem("userEmail", data.user.email);
     } catch (error) {
@@ -62,6 +64,7 @@ const SignUpLoginPage: React.FC = () => {
   const logOut = () => {
     localStorage.removeItem("userName");
     localStorage.removeItem("userEmail");
+    Cookies.remove(AuthCookie.ACCESS_TOKEN);
     console.log("로그아웃 성공");
   };
 

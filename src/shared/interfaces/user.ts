@@ -9,4 +9,5 @@ export interface IUserPayload extends JWTPayload {
     name: string;
     email: string;
   };
+  token: string;
 }

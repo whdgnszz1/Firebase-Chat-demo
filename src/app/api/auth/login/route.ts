@@ -13,6 +13,7 @@ export async function POST(request: Request) {
       email,
       password
     );
+    const idToken = await userCredential.user.getIdToken();
 
     const userDoc = await getDoc(doc(db, "users", userCredential.user.uid));
     const userData = userDoc.data();
@@ -23,6 +24,7 @@ export async function POST(request: Request) {
         email: userCredential.user.email,
         name: userData?.name || "",
       },
+      token: idToken,
     });
   } catch (error: unknown) {
     console.error("로그인 실패:", getErrorMessage(error));
