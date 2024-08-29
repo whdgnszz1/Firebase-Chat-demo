@@ -69,6 +69,10 @@ const MainPage: React.FC = () => {
     createChatRoom({ name: chatRoomName });
   };
 
+  const handleRoomClick = (roomId: string, roomName: string) => {
+    router.push(`/chat/${roomId}?name=${encodeURIComponent(roomName)}`);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-r from-yellow-100 to-pink-100 p-4">
       <Card className="w-full max-w-4xl mx-auto">
@@ -115,6 +119,7 @@ const MainPage: React.FC = () => {
                   <li
                     key={room.id}
                     className="border rounded p-2 cursor-pointer"
+                    onClick={() => handleRoomClick(room.id, room.name)}
                   >
                     {room.name}
                   </li>

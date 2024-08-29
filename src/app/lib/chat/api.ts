@@ -1,5 +1,5 @@
-import { customFetch } from "@/util/api";
 import { HttpMethod } from "@/shared";
+import { customFetch } from "@/util/api";
 import {
   ChatRoom,
   CreateChatRoomRequestDto,

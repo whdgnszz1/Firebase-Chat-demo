@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { db } from "@/app/config/firebase-admin";
+import { adminAuth, db } from "@/app/config/firebase-admin";
 import { getErrorMessage } from "@/util/api/error";
 import { ILegacyApiJson1 } from "@/shared";
 import { ChatRoom } from "@/app/lib/chat";
@@ -38,10 +38,39 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const { chatRoomName } = await request.json();
-    const userEmail = request.headers.get("X-User-Email");
+    const { name } = await request.json();
 
-    if (!chatRoomName || !userEmail) {
+    const authorizationHeader = request.headers.get("Authorization");
+    if (!authorizationHeader) {
+      return NextResponse.json<ILegacyApiJson1<null>>(
+        {
+          data: null,
+          resultCode: "401",
+          statusCode: 401,
+          resultMessage: "Authorization 헤더가 필요합니다.",
+          detailMessage: null,
+        },
+        { status: 401 }
+      );
+    }
+    const idToken = authorizationHeader;
+    if (!idToken) {
+      return NextResponse.json<ILegacyApiJson1<null>>(
+        {
+          data: null,
+          resultCode: "401",
+          statusCode: 401,
+          resultMessage: "유효하지 않은 토큰입니다.",
+          detailMessage: null,
+        },
+        { status: 401 }
+      );
+    }
+
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
+    const userEmail = decodedToken.email;
+
+    if (!name || !userEmail) {
       return NextResponse.json<ILegacyApiJson1<null>>(
         {
           data: null,
@@ -55,7 +84,7 @@ export async function POST(request: Request) {
     }
 
     await db.collection("chatRooms").add({
-      name: chatRoomName,
+      name: name,
       createdBy: userEmail,
       createdAt: new Date(),
     });

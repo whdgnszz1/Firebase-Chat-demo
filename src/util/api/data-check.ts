@@ -10,6 +10,7 @@ export const successResultCodeList = [
   "200",
   "OK",
   "S200",
+  "201",
   null,
 ];
 
