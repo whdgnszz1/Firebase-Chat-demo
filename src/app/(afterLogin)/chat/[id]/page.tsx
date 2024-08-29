@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   addDoc,
   collection,
+  limit,
   onSnapshot,
   orderBy,
   query,
@@ -40,11 +41,13 @@ const ChatRoomPage: React.FC = () => {
     if (storedName) setUserName(storedName);
     if (!storedName || !roomId || !roomName) {
       router.push("/main");
+      return;
     }
 
     const messagesQuery = query(
       collection(db, "chatRooms", roomId, "messages"),
-      orderBy("timestamp", "asc")
+      orderBy("timestamp", "asc"),
+      limit(20)
     );
 
     const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
@@ -72,6 +75,7 @@ const ChatRoomPage: React.FC = () => {
     try {
       await addDoc(collection(db, "chatRooms", roomId, "messages"), newMessage);
       setMessage("");
+      scrollRef.current?.scrollIntoView({ behavior: "smooth" });
     } catch (error) {
       console.error("메시지 전송 실패:", error);
     }
