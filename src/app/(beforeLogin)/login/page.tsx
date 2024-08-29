@@ -1,6 +1,7 @@
 "use client";
 
 import { auth } from "@/app/config/firebase";
+import { useLogin, useSignUp } from "@/app/lib/auth";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -13,9 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AuthCookie, HttpContentType, HttpHeader, HttpMethod } from "@/shared";
-import { IUserPayload } from "@/shared/interfaces/user";
-import { customFetch } from "@/util/api";
+import { AuthCookie } from "@/shared";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import Cookies from "js-cookie";
 import { AlertCircle, Eye, EyeOff, Facebook, Lock, User } from "lucide-react";
@@ -32,28 +31,31 @@ const SignUpLoginPage: React.FC = () => {
   const [error, setError] = useState<string>("");
   const [tab, setTab] = useState<string>("login");
 
+  const { mutate: signUpMutate } = useSignUp();
+  const { mutate: loginnMutate } = useLogin();
+
   const handleError = (errorMessage: string): void => {
     setError(errorMessage);
     setTimeout(() => setError(""), 5000);
   };
 
-  const signUp = async (event: FormEvent): Promise<void> => {
+  const signUp = (event: FormEvent) => {
     event.preventDefault();
-    try {
-      await customFetch("/api/auth/signup", {
-        method: HttpMethod.POST,
-        headers: { [HttpHeader.CONTENT_TYPE]: HttpContentType.JSON },
-        body: JSON.stringify({ email, password, name }),
-      });
-
-      setTab("login");
-    } catch (error) {
-      console.error("회원가입 실패:", error);
-      handleError("회원가입 실패. 다시 시도해주세요.");
-    }
+    signUpMutate(
+      { email, password, name },
+      {
+        onSuccess: () => {
+          setTab("login");
+        },
+        onError: (error) => {
+          console.error("회원가입 실패:", error);
+          handleError("회원가입 실패. 다시 시도해주세요.");
+        },
+      }
+    );
   };
 
-  const signIn = async (event: FormEvent): Promise<void> => {
+  const login = async (event: FormEvent): Promise<void> => {
     event.preventDefault();
 
     try {
@@ -64,17 +66,21 @@ const SignUpLoginPage: React.FC = () => {
       );
       const idToken = await userCredential.user.getIdToken();
 
-      const data: IUserPayload = await customFetch("/api/auth/login", {
-        method: HttpMethod.POST,
-        headers: { [HttpHeader.CONTENT_TYPE]: HttpContentType.JSON },
-        body: JSON.stringify({ idToken }),
-      });
-
-      Cookies.set(AuthCookie.ACCESS_TOKEN, idToken, { expires: 1 });
-      localStorage.setItem("userName", data.user.name);
-      localStorage.setItem("userEmail", data.user.email);
-
-      router.push("/main");
+      loginnMutate(
+        { idToken },
+        {
+          onSuccess: (data) => {
+            Cookies.set(AuthCookie.ACCESS_TOKEN, idToken, { expires: 1 });
+            localStorage.setItem("userName", data.user.name);
+            localStorage.setItem("userEmail", data.user.email);
+            router.push("/main");
+          },
+          onError: (error) => {
+            console.error("로그인 실패:", error);
+            handleError("로그인 실패. 이메일과 비밀번호를 확인해주세요.");
+          },
+        }
+      );
     } catch (error) {
       console.error("로그인 실패:", error);
       handleError("로그인 실패. 이메일과 비밀번호를 확인해주세요.");
@@ -159,7 +165,7 @@ const SignUpLoginPage: React.FC = () => {
               </form>
             </TabsContent>
             <TabsContent value="login">
-              <form onSubmit={signIn}>
+              <form onSubmit={login}>
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="login-email">이메일</Label>
