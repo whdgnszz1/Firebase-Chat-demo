@@ -1,6 +1,6 @@
 "use client";
 
-import React, { FormEvent, useState } from "react";
+import { auth } from "@/app/config/firebase";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -13,18 +13,24 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, Eye, EyeOff, Lock, Mail } from "lucide-react";
-import { customFetch } from "@/util/api";
-import { AuthCookie, HttpMethod } from "@/shared";
+import { AuthCookie, HttpContentType, HttpHeader, HttpMethod } from "@/shared";
 import { IUserPayload } from "@/shared/interfaces/user";
+import { customFetch } from "@/util/api";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import Cookies from "js-cookie";
+import { AlertCircle, Eye, EyeOff, Facebook, Lock, User } from "lucide-react";
+import { useRouter } from "next/navigation";
+import React, { FormEvent, useState } from "react";
 
 const SignUpLoginPage: React.FC = () => {
+  const router = useRouter();
+
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [name, setName] = useState<string>("");
   const [error, setError] = useState<string>("");
+  const [tab, setTab] = useState<string>("login");
 
   const handleError = (errorMessage: string): void => {
     setError(errorMessage);
@@ -36,8 +42,11 @@ const SignUpLoginPage: React.FC = () => {
     try {
       await customFetch("/api/auth/signup", {
         method: HttpMethod.POST,
+        headers: { [HttpHeader.CONTENT_TYPE]: HttpContentType.JSON },
         body: JSON.stringify({ email, password, name }),
       });
+
+      setTab("login");
     } catch (error) {
       console.error("회원가입 실패:", error);
       handleError("회원가입 실패. 다시 시도해주세요.");
@@ -46,15 +55,26 @@ const SignUpLoginPage: React.FC = () => {
 
   const signIn = async (event: FormEvent): Promise<void> => {
     event.preventDefault();
+
     try {
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      const idToken = await userCredential.user.getIdToken();
+
       const data: IUserPayload = await customFetch("/api/auth/login", {
         method: HttpMethod.POST,
-        body: JSON.stringify({ email, password }),
+        headers: { [HttpHeader.CONTENT_TYPE]: HttpContentType.JSON },
+        body: JSON.stringify({ idToken }),
       });
 
-      Cookies.set(AuthCookie.ACCESS_TOKEN, data.token, { expires: 1 });
+      Cookies.set(AuthCookie.ACCESS_TOKEN, idToken, { expires: 1 });
       localStorage.setItem("userName", data.user.name);
       localStorage.setItem("userEmail", data.user.email);
+
+      router.push("/main");
     } catch (error) {
       console.error("로그인 실패:", error);
       handleError("로그인 실패. 이메일과 비밀번호를 확인해주세요.");
@@ -69,7 +89,7 @@ const SignUpLoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-r from-purple-100 to-pink-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-r from-yellow-100 to-pink-100 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">
@@ -80,7 +100,7 @@ const SignUpLoginPage: React.FC = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="signup">
+          <Tabs value={tab} onValueChange={setTab}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signup">회원가입</TabsTrigger>
               <TabsTrigger value="login">로그인</TabsTrigger>
@@ -193,10 +213,18 @@ const SignUpLoginPage: React.FC = () => {
               <span className="bg-white px-2 text-gray-500">또는 계속하기</span>
             </div>
           </div>
-          <div className="mt-6 flex flex-col space-y-3">
-            <Button variant="outline" className="w-full">
-              <Mail className="mr-2 h-4 w-4" /> 이메일로 가입하기
-            </Button>
+          <div className="mt-6">
+            <p className="text-sm text-gray-500 mb-3 text-center">
+              아래 기능들은 현재 준비 중입니다.
+            </p>
+            <div className="flex flex-col space-y-3">
+              <Button variant="outline" className="w-full" disabled>
+                <Facebook className="mr-2 h-4 w-4" /> 페이스북으로 가입하기
+              </Button>
+              <Button variant="outline" className="w-full" disabled>
+                <User className="mr-2 h-4 w-4" /> 구글로 가입하기
+              </Button>
+            </div>
           </div>
         </CardContent>
         <CardFooter className="flex flex-col items-center">

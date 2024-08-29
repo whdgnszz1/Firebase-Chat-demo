@@ -1,30 +1,31 @@
 import { NextResponse } from "next/server";
-import { auth, db } from "@/app/config/firebase";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { adminAuth, db } from "@/app/config/firebase-admin";
 import { getErrorMessage } from "@/util/api/error";
 
 export async function POST(request: Request) {
   try {
-    const { email, password } = await request.json();
+    const { idToken } = await request.json();
 
-    const userCredential = await signInWithEmailAndPassword(
-      auth,
-      email,
-      password
-    );
-    const idToken = await userCredential.user.getIdToken();
+    if (!idToken) {
+      throw new Error("ID 토큰이 제공되지 않았습니다.");
+    }
 
-    const userDoc = await getDoc(doc(db, "users", userCredential.user.uid));
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
+    const user = await adminAuth.getUser(decodedToken.uid);
+
+    const userDoc = await db.collection("users").doc(user.uid).get();
     const userData = userDoc.data();
+
+    if (!userData) {
+      throw new Error("사용자 데이터가 존재하지 않습니다.");
+    }
 
     return NextResponse.json({
       message: "로그인 성공",
       user: {
-        email: userCredential.user.email,
-        name: userData?.name || "",
+        email: user.email,
+        name: userData.name || "",
       },
-      token: idToken,
     });
   } catch (error: unknown) {
     console.error("로그인 실패:", getErrorMessage(error));
