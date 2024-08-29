@@ -8,7 +8,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   addDoc,
   collection,
-  limit,
   onSnapshot,
   orderBy,
   query,
@@ -32,6 +31,7 @@ const ChatRoomPage: React.FC = () => {
   const [message, setMessage] = useState<string>("");
   const [messages, setMessages] = useState<Message[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [shouldScroll, setShouldScroll] = useState<boolean | null>(true);
 
   const roomId = Array.isArray(params.id) ? params.id[0] : params.id || "";
   const roomName = searchParams.get("name") || "";
@@ -41,13 +41,11 @@ const ChatRoomPage: React.FC = () => {
     if (storedName) setUserName(storedName);
     if (!storedName || !roomId || !roomName) {
       router.push("/main");
-      return;
     }
 
     const messagesQuery = query(
       collection(db, "chatRooms", roomId, "messages"),
-      orderBy("timestamp", "asc"),
-      limit(20)
+      orderBy("timestamp", "asc")
     );
 
     const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
@@ -56,12 +54,27 @@ const ChatRoomPage: React.FC = () => {
         ...doc.data(),
         timestamp: doc.data().timestamp.toDate(),
       })) as Message[];
-      setMessages(newMessages);
-      scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+
+      setMessages((prevMessages) => {
+        const isAtBottom =
+          scrollRef.current &&
+          scrollRef.current.scrollHeight - scrollRef.current.clientHeight ===
+            scrollRef.current.scrollTop;
+
+        setShouldScroll(isAtBottom);
+
+        return newMessages;
+      });
     });
 
     return () => unsubscribe();
   }, [router, roomId, roomName]);
+
+  useEffect(() => {
+    if (shouldScroll) {
+      scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, shouldScroll]);
 
   const handleSendMessage = async () => {
     if (message.trim() === "") return;
@@ -75,7 +88,7 @@ const ChatRoomPage: React.FC = () => {
     try {
       await addDoc(collection(db, "chatRooms", roomId, "messages"), newMessage);
       setMessage("");
-      scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+      setShouldScroll(true);
     } catch (error) {
       console.error("메시지 전송 실패:", error);
     }
@@ -127,21 +140,21 @@ const ChatRoomPage: React.FC = () => {
               <div ref={scrollRef} />
             </div>
           </ScrollArea>
-          <div className="flex-shrink-0 pt-4">
-            <div className="flex w-full space-x-2">
-              <Input
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="메시지를 입력하세요..."
-                onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-              />
-              <Button onClick={handleSendMessage}>
-                <Send className="mr-2 h-4 w-4" />
-                전송
-              </Button>
-            </div>
-          </div>
         </CardContent>
+        <div className="flex-shrink-0 p-4">
+          <div className="flex w-full space-x-2">
+            <Input
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="메시지를 입력하세요..."
+              onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+            />
+            <Button onClick={handleSendMessage}>
+              <Send className="mr-2 h-4 w-4" />
+              전송
+            </Button>
+          </div>
+        </div>
       </Card>
     </div>
   );
